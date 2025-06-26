@@ -365,7 +365,7 @@ export default function SimpleListenPage() {
 
         {/* Footer */}
         <div className="text-center text-sm text-gray-500 mt-8">
-          Developed by Shepherd Zsper Phiri
+          Developed by Shepherd Zisper Phiri
         </div>
       </div>
     </div>

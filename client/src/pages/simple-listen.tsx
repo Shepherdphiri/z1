@@ -251,7 +251,7 @@ export default function SimpleListenPage() {
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Audio Listener</h1>
-          <p className="text-gray-600">Tune in to live broadcasts</p>
+          <p className="text-gray-600">| Developed By Shepherd Zisper Phiri |</p>
         </div>
 
         {/* Connection Status */}

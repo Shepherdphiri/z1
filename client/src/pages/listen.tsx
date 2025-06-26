@@ -86,9 +86,24 @@ export default function ListenPage() {
   // Set up audio element when remote stream is available
   useEffect(() => {
     if (remoteStream && audioRef.current) {
+      console.log('Setting up remote stream for audio element');
       audioRef.current.srcObject = remoteStream;
       audioRef.current.volume = volume[0] / 100;
-      setIsConnected(true);
+      audioRef.current.autoplay = true;
+      audioRef.current.muted = false;
+      
+      // Try to play the audio
+      audioRef.current.play().then(() => {
+        console.log('Audio playback started successfully');
+        setIsConnected(true);
+      }).catch((error) => {
+        console.error('Error starting audio playback:', error);
+        // For autoplay policy, we may need user interaction
+        if (error.name === 'NotAllowedError') {
+          console.log('Autoplay blocked - user interaction required');
+        }
+        setIsConnected(true); // Still mark as connected
+      });
       
       // Update stream time
       const startTime = Date.now();
@@ -113,7 +128,17 @@ export default function ListenPage() {
       return;
     }
 
+    if (!wsConnected) {
+      toast({
+        title: "Connection Error",
+        description: "WebSocket not connected. Please refresh the page.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
+      console.log('Starting connection to broadcaster:', selectedBroadcaster);
       await connectToStream(selectedBroadcaster);
       toast({
         title: "Connecting to Stream",
@@ -214,8 +239,13 @@ export default function ListenPage() {
             <audio 
               ref={audioRef}
               controls 
+              autoPlay
               className="w-full mb-4 rounded-lg"
               style={{ filter: 'sepia(20%) saturate(70%) hue-rotate(200deg)' }}
+              onLoadedMetadata={() => console.log('Audio metadata loaded')}
+              onCanPlay={() => console.log('Audio can play')}
+              onPlay={() => console.log('Audio started playing')}
+              onError={(e) => console.error('Audio error:', e)}
             />
             
             {/* Audio Info */}

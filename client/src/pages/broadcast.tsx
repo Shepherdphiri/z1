@@ -169,15 +169,10 @@ export default function BroadcastPage() {
 
   // Start audio preview when microphone is selected
   useEffect(() => {
-    if (selectedMicrophone && !isBroadcasting) {
+    if (selectedMicrophone && !isBroadcasting && !isAudioActive) {
       startAudio(false);
     }
-    return () => {
-      if (!isBroadcasting) {
-        stopAudio();
-      }
-    };
-  }, [selectedMicrophone, isBroadcasting, startAudio, stopAudio]);
+  }, [selectedMicrophone, isBroadcasting, isAudioActive, startAudio]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 pb-20">

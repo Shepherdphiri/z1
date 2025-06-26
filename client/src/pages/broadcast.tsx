@@ -203,7 +203,7 @@ export default function BroadcastPage() {
             <Mic className="text-2xl text-blue-600" size={32} />
           </div>
           <h1 className="text-2xl font-bold text-slate-800 mb-2">Start Broadcasting</h1>
-          <p className="text-slate-600 text-sm">Share your voice with listeners worldwide</p>
+          <p className="text-slate-600 text-sm">Broadcast With Ease | Developed By Shepherd Zisper Phiri</p>
         </div>
 
         {/* Broadcast Status */}

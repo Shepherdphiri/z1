@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useWebRTC } from "@/hooks/use-webrtc";
-import { useAudioPreview } from "@/hooks/use-audio-preview";
+import { useAudioManager } from "@/hooks/use-audio-manager";
 import { AudioVisualizer } from "@/components/audio-visualizer";
 import { useToast } from "@/hooks/use-toast";
 
@@ -29,16 +29,19 @@ export default function BroadcastPage() {
     localStream,
     peerConnections,
     startBroadcast: startWebRTCBroadcast,
-    stopBroadcast: stopWebRTCBroadcast
+    stopBroadcast: stopWebRTCBroadcast,
+    handleOffer,
+    handleIceCandidate
   } = useWebRTC(broadcasterId, sendMessage);
 
   const {
     audioLevel,
-    isListening,
-    startListening,
-    stopListening,
-    microphonePermission
-  } = useAudioPreview(selectedMicrophone);
+    isActive: isAudioActive,
+    microphonePermission,
+    currentStream,
+    startAudio,
+    stopAudio
+  } = useAudioManager(selectedMicrophone);
 
   // Get available microphones
   useEffect(() => {
@@ -65,17 +68,18 @@ export default function BroadcastPage() {
       
       switch (message.type) {
         case 'webrtc-offer':
-          if (localStream) {
-            // Handle incoming offer from listener
-            // This will be handled by the useWebRTC hook
+          if (localStream && message.offer && message.listenerId) {
+            handleOffer(message.offer, message.listenerId);
           }
           break;
         case 'webrtc-ice-candidate':
-          // Handle ICE candidates
+          if (message.candidate && message.fromId) {
+            handleIceCandidate(message.candidate, message.fromId);
+          }
           break;
       }
     }
-  }, [lastMessage, localStream]);
+  }, [lastMessage, localStream, handleOffer, handleIceCandidate]);
 
   // Update listeners count based on peer connections
   useEffect(() => {
@@ -102,7 +106,16 @@ export default function BroadcastPage() {
         return;
       }
 
-      await startWebRTCBroadcast(selectedMicrophone);
+      // Use current stream or start new one for broadcasting
+      let broadcastStream = currentStream;
+      if (!broadcastStream) {
+        broadcastStream = await startAudio(true);
+        if (!broadcastStream) {
+          throw new Error('Failed to access microphone');
+        }
+      }
+      
+      await startWebRTCBroadcast(selectedMicrophone, broadcastStream);
       
       // Register as broadcaster
       sendMessage({
@@ -138,6 +151,13 @@ export default function BroadcastPage() {
 
       setIsBroadcasting(false);
       
+      // Restart audio preview after stopping broadcast
+      if (selectedMicrophone) {
+        setTimeout(() => {
+          startAudio(false);
+        }, 500);
+      }
+      
       toast({
         title: "Broadcast Stopped",
         description: "Your broadcast has ended."
@@ -150,14 +170,14 @@ export default function BroadcastPage() {
   // Start audio preview when microphone is selected
   useEffect(() => {
     if (selectedMicrophone && !isBroadcasting) {
-      startListening();
+      startAudio(false);
     }
     return () => {
       if (!isBroadcasting) {
-        stopListening();
+        stopAudio();
       }
     };
-  }, [selectedMicrophone, isBroadcasting]);
+  }, [selectedMicrophone, isBroadcasting, startAudio, stopAudio]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 pb-20">
@@ -221,7 +241,7 @@ export default function BroadcastPage() {
               <span>Microphone Input</span>
               <span>
                 {microphonePermission === 'granted' ? 
-                  (isListening ? 'Active' : 'Ready') : 
+                  (isAudioActive ? 'Active' : 'Ready') : 
                   'Permission needed'
                 }
               </span>

@@ -52,23 +52,34 @@ export const useWebRTC = (userId: string, sendMessage: (message: any) => void) =
     return pc;
   }, [userId, sendMessage, peerConnections]);
 
-  const startBroadcast = useCallback(async (deviceId?: string) => {
+  const startBroadcast = useCallback(async (deviceId?: string, existingStream?: MediaStream) => {
     try {
-      const constraints = {
-        audio: deviceId ? { deviceId: { exact: deviceId } } : true,
-        video: false
-      };
+      let stream = existingStream;
+      
+      if (!stream) {
+        const constraints = {
+          audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+          video: false
+        };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      }
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       setLocalStream(stream);
       localStreamRef.current = stream;
+
+      // Add tracks to all existing peer connections
+      peerConnections.forEach((pc) => {
+        stream!.getTracks().forEach(track => {
+          pc.addTrack(track, stream!);
+        });
+      });
 
       return stream;
     } catch (error) {
       console.error('Error accessing microphone:', error);
       throw error;
     }
-  }, []);
+  }, [peerConnections]);
 
   const stopBroadcast = useCallback(() => {
     if (localStreamRef.current) {

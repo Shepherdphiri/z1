@@ -29,7 +29,9 @@ export default function ListenPage() {
   const {
     remoteStream,
     connectToStream,
-    disconnectFromStream
+    disconnectFromStream,
+    handleAnswer,
+    handleIceCandidate
   } = useWebRTC(listenerId, sendMessage);
 
   // Handle WebSocket messages
@@ -58,14 +60,18 @@ export default function ListenPage() {
           }
           break;
         case 'webrtc-answer':
-          // Handle WebRTC answer
+          if (message.answer && message.broadcasterId) {
+            handleAnswer(message.answer, message.broadcasterId);
+          }
           break;
         case 'webrtc-ice-candidate':
-          // Handle ICE candidates
+          if (message.candidate && message.fromId) {
+            handleIceCandidate(message.candidate, message.fromId);
+          }
           break;
       }
     }
-  }, [lastMessage, selectedBroadcaster]);
+  }, [lastMessage, selectedBroadcaster, handleAnswer, handleIceCandidate]);
 
   // Register as listener when WebSocket connects
   useEffect(() => {
